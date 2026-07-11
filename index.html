@@ -1,0 +1,1388 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>柑仔店體感健腦遊戲 - 投影專用單檔版</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & React DOM CDN -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <!-- Babel compiler for JSX in browser -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <style>
+        /* Custom styles to match the retro vibe and fix font display */
+        body {
+            background-color: #132c16;
+            color: #faf6eb;
+            font-family: "Noto Sans TC", "Microsoft JhengHei", "微軟正黑體", "Heiti TC", system-ui, sans-serif;
+            background-image: 
+                radial-gradient(#1e3f20 20%, transparent 20%),
+                radial-gradient(#1e3f20 20%, transparent 20%);
+            background-size: 20px 20px;
+            background-position: 0 0, 10px 10px;
+        }
+        
+        .shadow-retro-sm {
+            box-shadow: 4px 4px 0px 0px rgba(0, 0, 0, 0.95);
+        }
+        
+        .shadow-retro-md {
+            box-shadow: 8px 8px 0px 0px rgba(0, 0, 0, 0.95);
+        }
+        
+        .shadow-retro-lg {
+            box-shadow: 12px 12px 0px 0px rgba(0, 0, 0, 0.95);
+        }
+        
+        .retro-blink {
+            animation: blink-anim 1s steps(2, start) infinite;
+        }
+        
+        @keyframes blink-anim {
+            to { visibility: hidden; }
+        }
+
+        /* Disable number inputs spin buttons */
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col pb-16 select-none">
+
+    <!-- ==========================================
+        REQUIRED: Fixed Black Pinned Header Banner
+        ========================================== -->
+    <header class="bg-black text-white text-center py-3 font-bold tracking-widest text-[24px] uppercase border-b-4 border-[#8e2121] shadow-md z-30 sticky top-0">
+        數位教學專業設計
+    </header>
+
+    <!-- Main Container Mount Point -->
+    <div id="root" class="flex-1 max-w-7xl w-full mx-auto p-4 flex flex-col justify-center items-center"></div>
+
+    <!-- ==========================================
+        REQUIRED: Fixed Black Pinned Footer Banner
+        ========================================== -->
+    <footer class="bg-black text-white px-6 py-3 font-bold tracking-wider text-[24px] border-t-4 border-black shadow-lg fixed bottom-0 right-0 z-40 rounded-tl-xl">
+        體感互動健康促進專家 儲良均老師
+    </footer>
+
+    <!-- React App Script -->
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // ==========================================
+        // Web Audio API Sound Synthesizer
+        // ==========================================
+        class RetroSoundEngine {
+            constructor() {
+                this.ctx = null;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            }
+
+            playCorrect() {
+                this.init();
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                
+                const osc1 = this.ctx.createOscillator();
+                const osc2 = this.ctx.createOscillator();
+                const gain1 = this.ctx.createGain();
+                const gain2 = this.ctx.createGain();
+                
+                osc1.type = 'triangle';
+                osc1.frequency.setValueAtTime(659.25, now);
+                gain1.gain.setValueAtTime(0.25, now);
+                gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+                
+                osc2.type = 'triangle';
+                osc2.frequency.setValueAtTime(880.00, now + 0.10);
+                gain2.gain.setValueAtTime(0.25, now + 0.10);
+                gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+                
+                osc1.connect(gain1);
+                gain1.connect(this.ctx.destination);
+                osc2.connect(gain2);
+                gain2.connect(this.ctx.destination);
+                
+                osc1.start(now);
+                osc1.stop(now + 0.16);
+                osc2.start(now + 0.10);
+                osc2.stop(now + 0.50);
+            }
+
+            playIncorrect() {
+                this.init();
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                
+                const osc1 = this.ctx.createOscillator();
+                const osc2 = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc1.type = 'sawtooth';
+                osc1.frequency.setValueAtTime(145, now);
+                osc1.frequency.linearRampToValueAtTime(130, now + 0.35);
+                
+                osc2.type = 'square';
+                osc2.frequency.setValueAtTime(149, now);
+                osc2.frequency.linearRampToValueAtTime(133, now + 0.35);
+                
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.linearRampToValueAtTime(0.2, now + 0.22);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
+                
+                osc1.connect(gain);
+                osc2.connect(gain);
+                gain.connect(this.ctx.destination);
+                
+                osc1.start(now);
+                osc2.start(now);
+                osc1.stop(now + 0.4);
+                osc2.stop(now + 0.4);
+            }
+
+            playFanfare() {
+                this.init();
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const freqs = [261.63, 329.63, 392.00, 523.25]; // C4, E4, G4, C5
+                
+                freqs.forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+                    
+                    gain.gain.setValueAtTime(0.12, now + idx * 0.08);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.8 + idx * 0.08);
+                    
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    
+                    osc.start(now + idx * 0.08);
+                    osc.stop(now + 1.0 + idx * 0.08);
+                });
+            }
+
+            playTick() {
+                this.init();
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(900, now);
+                gain.gain.setValueAtTime(0.08, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+                
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                
+                osc.start(now);
+                osc.stop(now + 0.05);
+            }
+
+            playPop() {
+                this.init();
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(400, now);
+                osc.frequency.exponentialRampToValueAtTime(1200, now + 0.12);
+                
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+                
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                
+                osc.start(now);
+                osc.stop(now + 0.13);
+            }
+        }
+
+        const sounds = new RetroSoundEngine();
+
+        // ==========================================
+        // Retro Game Data
+        // ==========================================
+        const ACTION_MAP = {
+            red: { label: '紅色', action: '雙手舉高', colorClass: 'bg-[#d9383a]', textClass: 'text-white' },
+            yellow: { label: '黃色', action: '雙腳踏步', colorClass: 'bg-[#e2a818]', textClass: 'text-[#1c1401]' },
+            blue: { label: '藍色', action: '雙手叉腰', colorClass: 'bg-[#1e60b3]', textClass: 'text-white' },
+            green: { label: '綠色', action: '起立坐下', colorClass: 'bg-[#277a3d]', textClass: 'text-white' },
+        };
+
+        const RETRO_ITEMS = [
+            {
+                id: 1,
+                name: '大同玩偶',
+                category: '古早童玩',
+                tip: '大同大同國貨好～重溫胸前抱著橄欖球、頭戴紅色頭盔的小健兒！',
+                correctColor: 'red',
+                correctAction: '雙手舉高',
+                trivia: '大同玩偶誕生於民國 58 年，是台灣第一隻企業公仔，當時只要買萬能電鍋或電視機就會送哦！'
+            },
+            {
+                id: 2,
+                name: '明星花露水',
+                category: '經典日常',
+                tip: '越香越迷人！阿嬤梳妝台必備的綠色玻璃香水，據說還能驅蚊避邪？',
+                correctColor: 'blue',
+                correctAction: '雙手叉腰',
+                trivia: '清朝光緒時期便研發出的花露水，標誌上是一位穿粉紅裙子跳舞的女孩，是台灣香水的始祖！'
+            },
+            {
+                id: 3,
+                name: '黑松沙士',
+                category: '甘仔店冷飲',
+                tip: '夏天消暑！阿嬤總說感冒時要加一小匙「這個白色調味料」一起喝？',
+                correctColor: 'green',
+                correctAction: '起立坐下',
+                trivia: '沙士在台灣流行超過 70 年，源自墨西哥的一種草藥草本飲品，加鹽飲用是台灣獨特的生活智慧！'
+            },
+            {
+                id: 4,
+                name: '彩色陀螺',
+                category: '廟口童玩',
+                tip: '用粗麻繩一圈圈繞緊，帥氣地往地上一甩！比比看誰轉得最久？',
+                correctColor: 'yellow',
+                correctAction: '雙腳踏步',
+                trivia: '陀螺在台灣又稱「獨樂」，大溪陀螺節更曾創下百人同時打陀螺的紀錄，是無數學員在廟口的回憶。'
+            },
+            {
+                id: 5,
+                name: '嗶嗶糖',
+                category: '懷舊零食',
+                tip: '含在嘴唇中間，輕輕一吹就會發出嗶嗶聲！可以吹哨子又甜甜好吃的糖果？',
+                correctColor: 'blue',
+                correctAction: '雙手叉腰',
+                trivia: '嗶嗶糖又叫「哨子糖」，中間空心的圓環設計是為了吹出高頻哨音。常附贈小紙盒玩具，好玩又好摸。'
+            },
+            {
+                id: 6,
+                name: '彈珠汽水',
+                category: '甘仔店冷飲',
+                tip: '用小木塞用力將玻璃球「咚」一聲壓下去，汽水泡泡瞬間湧上來！',
+                correctColor: 'green',
+                correctAction: '起立坐下',
+                trivia: '彈珠汽水瓶口的特殊凹槽設計，是用來在倒汽水時卡住玻璃彈珠，不讓它擋住出水口的。'
+            },
+            {
+                id: 7,
+                name: '尪仔標',
+                category: '古早童玩',
+                tip: '紙牌周圍有美麗的鋸齒！用手指互相彈擊或拍打，看誰的卡被壓在下面？',
+                correctColor: 'red',
+                correctAction: '雙手舉高',
+                trivia: '圓圓的一小張紙牌，印有封神榜、西遊記人物，四個角落還印有撲克牌花色與暗器圖案，玩法千百種！'
+            },
+            {
+                id: 8,
+                name: '森永牛奶糖',
+                category: '懷舊零食',
+                tip: '亮黃色的紙包裝盒，滑順濃郁的奶香在嘴裡化開，是以前最奢侈的小點心！',
+                correctColor: 'yellow',
+                correctAction: '雙腳踏步',
+                trivia: '外盒寫著「滋養豐富、風味絕佳」，這是從日治時期就流傳至今的極致甜點代表！'
+            },
+            {
+                id: 9,
+                name: '虎標萬金油',
+                category: '家庭常備',
+                tip: '紅色圓形鐵盒，蓋上有隻奔跑的猛虎！頭暈、肚子痛、蚊子咬，萬事皆可擦！',
+                correctColor: 'red',
+                correctAction: '雙手舉高',
+                trivia: '由緬甸的胡文虎、胡文豹兄弟研發，內含薄荷腦與樟腦，獨特的草藥香味陪伴幾代台灣人成長。'
+            },
+            {
+                id: 10,
+                name: '太空氣球',
+                category: '古早童玩',
+                tip: '擠出一小坨黃色半透明黏膠在小吸管頭，鼓起腮幫子，吹出一個色彩斑斕的透明泡泡！',
+                correctColor: 'blue',
+                correctAction: '雙手叉腰',
+                trivia: '這種氣球味道很獨特，輕輕一拍還能在空中彈跳，破了還可以用手捏捏補回去，神奇無比！'
+            }
+        ];
+
+        // ==========================================
+        // Inline SVG Graphics Components
+        // ==========================================
+        const ItemRetroGraphic = ({ itemId }) => {
+            switch (itemId) {
+                case 1:
+                    return (
+                        <svg viewBox="0 0 100 100" className="w-40 h-40 mx-auto" aria-hidden="true">
+                            <circle cx="50" cy="50" r="45" fill="#fdf6e2" stroke="#000" strokeWidth="3" />
+                            <path d="M 25 35 Q 50 15 75 35 L 75 55 Q 50 40 25 55 Z" fill="#277a3d" stroke="#000" strokeWidth="2.5" />
+                            <rect x="42" y="16" width="16" height="8" fill="#e2a818" stroke="#000" strokeWidth="2" />
+                            <polygon points="50,16 46,24 54,24" fill="#d9383a" />
+                            <circle cx="50" cy="53" r="18" fill="#faf6eb" stroke="#000" strokeWidth="2" />
+                            <ellipse cx="44" cy="51" rx="2.5" ry="4" fill="#000" />
+                            <ellipse cx="56" cy="51" rx="2.5" ry="4" fill="#000" />
+                            <path d="M 45 61 Q 50 67 55 61" stroke="#000" strokeWidth="3" fill="none" strokeLinecap="round" />
+                            <rect x="35" y="72" width="30" height="15" rx="5" fill="#e2a818" stroke="#000" strokeWidth="2" />
+                            <text x="50" y="83" fontSize="10" fontWeight="bold" fill="#000" textAnchor="middle" fontFamily="sans-serif">大同</text>
+                        </svg>
+                    );
+                case 2:
+                    return (
+                        <svg viewBox="0 0 100 100" className="w-40 h-40 mx-auto" aria-hidden="true">
+                            <circle cx="50" cy="50" r="45" fill="#fdf6e2" stroke="#000" strokeWidth="3" />
+                            <path d="M 45 80 L 55 80 L 58 45 L 53 45 L 53 30 L 47 30 L 47 45 L 42 45 Z" fill="#277a3d" stroke="#000" strokeWidth="2.5" />
+                            <rect x="45" y="22" width="10" height="8" rx="2" fill="#e2a818" stroke="#000" strokeWidth="2" />
+                            <rect x="44" y="52" width="12" height="20" fill="#d9383a" stroke="#000" strokeWidth="1.5" />
+                            <circle cx="50" cy="62" r="4" fill="#e2a818" />
+                            <path d="M 30 40 Q 50 30 70 40" stroke="#1e60b3" strokeWidth="2" fill="none" strokeDasharray="4 4" />
+                            <path d="M 32 46 Q 50 38 68 46" stroke="#1e60b3" strokeWidth="2" fill="none" strokeDasharray="4 4" />
+                        </svg>
+                    );
+                case 3:
+                    return (
+                        <svg viewBox="0 0 100 100" className="w-40 h-40 mx-auto" aria-hidden="true">
+                            <circle cx="50" cy="50" r="45" fill="#fdf6e2" stroke="#000" strokeWidth="3" />
+                            <path d="M 43 82 L 57 82 L 56 48 L 52 40 L 52 26 L 48 26 L 48 40 L 44 48 Z" fill="#5c3c24" stroke="#000" strokeWidth="2.5" />
+                            <rect x="47" y="20" width="6" height="6" fill="#d9383a" stroke="#000" strokeWidth="1.5" />
+                            <rect x="44" y="53" width="12" height="22" fill="#faf6eb" stroke="#000" strokeWidth="1.5" />
+                            <text x="50" y="66" fontSize="8" fontWeight="bold" fill="#d9383a" textAnchor="middle" fontFamily="sans-serif">黑松</text>
+                            <circle cx="47" cy="45" r="2.5" fill="#fff" opacity="0.8" />
+                            <circle cx="53" cy="43" r="1.5" fill="#fff" opacity="0.8" />
+                            <circle cx="50" cy="35" r="2" fill="#fff" opacity="0.8" />
+                        </svg>
+                    );
+                case 4:
+                    return (
+                        <svg viewBox="0 0 100 100" className="w-40 h-40 mx-auto" aria-hidden="true">
+                            <circle cx="50" cy="50" r="45" fill="#fdf6e2" stroke="#000" strokeWidth="3" />
+                            <polygon points="50,85 28,45 72,45" fill="#c48a5c" stroke="#000" strokeWidth="2.5" />
+                            <path d="M 28 45 Q 50 35 72 45 Z" fill="#e2a818" stroke="#000" strokeWidth="2" />
+                            <rect x="46" y="24" width="8" height="11" fill="#d9383a" stroke="#000" strokeWidth="2" />
+                            <line x1="50" y1="85" x2="50" y2="91" stroke="#000" strokeWidth="3.5" strokeLinecap="round" />
+                            <path d="M 33 45 Q 50 48 67 45" stroke="#1e60b3" strokeWidth="2" fill="none" />
+                            <path d="M 38 55 Q 50 58 62 55" stroke="#277a3d" strokeWidth="2" fill="none" />
+                            <path d="M 43 65 Q 50 68 57 65" stroke="#d9383a" strokeWidth="2" fill="none" />
+                        </svg>
+                    );
+                case 5:
+                    return (
+                        <svg viewBox="0 0 100 100" className="w-40 h-40 mx-auto" aria-hidden="true">
+                            <circle cx="50" cy="50" r="45" fill="#fdf6e2" stroke="#000" strokeWidth="3" />
+                            <rect x="25" y="40" width="50" height="20" rx="10" fill="#faf6eb" stroke="#000" strokeWidth="2.5" />
+                            <circle cx="40" cy="50" r="10" fill="#277a3d" stroke="#000" strokeWidth="2" />
+                            <circle cx="60" cy="50" r="10" fill="#e2a818" stroke="#000" strokeWidth="2" />
+                            <circle cx="40" cy="50" r="4" fill="#fdf6e2" stroke="#000" strokeWidth="1.5" />
+                            <circle cx="60" cy="50" r="4" fill="#fdf6e2" stroke="#000" strokeWidth="1.5" />
+                            <path d="M 20 28 Q 50 20 80 28" stroke="#d9383a" strokeWidth="2.5" fill="none" strokeDasharray="3 3" />
+                        </svg>
+                    );
+                case 6:
+                    return (
+                        <svg viewBox="0 0 100 100" className="w-40 h-40 mx-auto" aria-hidden="true">
+                            <circle cx="50" cy="50" r="45" fill="#fdf6e2" stroke="#000" strokeWidth="3" />
+                            <path d="M 44 84 Q 50 86 56 84 L 55 52 Q 55 46 52 44 L 52 28 L 48 28 L 48 44 Q 45 46 45 52 Z" fill="#8bc34a" stroke="#000" strokeWidth="2.5" opacity="0.9" />
+                            <ellipse cx="50" cy="54" rx="4" ry="4" fill="#faf6eb" stroke="#000" strokeWidth="1.5" />
+                            <path d="M 48 40 Q 50 42 52 40" stroke="#000" strokeWidth="2" fill="none" />
+                            <circle cx="50" cy="72" r="3.5" fill="#fff" opacity="0.8" />
+                            <circle cx="47" cy="64" r="2" fill="#fff" opacity="0.8" />
+                            <circle cx="53" cy="62" r="2.5" fill="#fff" opacity="0.8" />
+                            <rect x="47" y="22" width="6" height="6" fill="#d9383a" stroke="#000" strokeWidth="1.5" />
+                        </svg>
+                    );
+                case 7:
+                    return (
+                        <svg viewBox="0 0 100 100" className="w-40 h-40 mx-auto" aria-hidden="true">
+                            <circle cx="50" cy="50" r="45" fill="#fdf6e2" stroke="#000" strokeWidth="3" />
+                            <path d="M 50 15 C 47 18 43 18 40 15 C 37 18 33 18 30 15 C 27 18 25 21 25 25 C 22 25 18 27 18 30 C 18 33 18 37 15 40 C 18 43 18 47 15 50 C 18 53 18 57 15 60 C 18 63 18 67 18 70 C 18 73 22 75 25 75 C 25 79 27 82 30 85 C 33 82 37 82 40 85 C 43 82 47 82 50 85 C 53 82 57 82 60 85 C 63 82 67 82 70 85 C 73 82 75 79 75 75 C 79 75 82 73 82 70 C 82 67 82 63 85 60 C 82 57 82 53 85 50 C 82 47 82 43 85 40 C 82 37 82 33 82 30 C 82 27 79 25 75 25 C 75 21 73 18 70 15 C 67 18 63 18 60 15 C 57 18 53 18 50 15 Z" fill="#e2a818" stroke="#000" strokeWidth="2" />
+                            <circle cx="50" cy="50" r="28" fill="#faf6eb" stroke="#000" strokeWidth="1.5" />
+                            <polygon points="50,28 55,39 67,39 58,47 61,59 50,51 39,59 42,47 33,39 45,39" fill="#d9383a" stroke="#000" strokeWidth="1" />
+                        </svg>
+                    );
+                case 8:
+                    return (
+                        <svg viewBox="0 0 100 100" className="w-40 h-40 mx-auto" aria-hidden="true">
+                            <circle cx="50" cy="50" r="45" fill="#fdf6e2" stroke="#000" strokeWidth="3" />
+                            <rect x="32" y="20" width="36" height="60" fill="#e2a818" stroke="#000" strokeWidth="2.5" />
+                            <rect x="37" y="25" width="26" height="50" fill="#faf6eb" stroke="#000" strokeWidth="1.5" />
+                            <line x1="32" y1="35" x2="68" y2="35" stroke="#000" strokeWidth="1.5" />
+                            <line x1="32" y1="65" x2="68" y2="65" stroke="#000" strokeWidth="1.5" />
+                            <circle cx="50" cy="50" r="8" fill="#d9383a" />
+                            <text x="50" y="53" fontSize="8" fill="#fff" fontWeight="bold" textAnchor="middle" fontFamily="sans-serif">M</text>
+                        </svg>
+                    );
+                case 9:
+                    return (
+                        <svg viewBox="0 0 100 100" className="w-40 h-40 mx-auto" aria-hidden="true">
+                            <circle cx="50" cy="50" r="45" fill="#fdf6e2" stroke="#000" strokeWidth="3" />
+                            <ellipse cx="50" cy="50" rx="32" ry="25" fill="#d9383a" stroke="#000" strokeWidth="2.5" />
+                            <ellipse cx="50" cy="50" rx="25" ry="19" fill="#faf6eb" stroke="#000" strokeWidth="1.5" />
+                            <path d="M 36 53 Q 40 45 46 46 Q 51 47 55 45 Q 60 43 64 47 L 64 51 Q 58 52 56 55 L 53 52 L 48 55 Q 43 54 36 53" fill="#d9383a" stroke="#000" strokeWidth="1" />
+                            <polygon points="50,28 52,32 57,32 53,35 55,39 50,37 45,39 47,35 43,32 48,32" fill="#e2a818" />
+                        </svg>
+                    );
+                case 10:
+                    return (
+                        <svg viewBox="0 0 100 100" className="w-40 h-40 mx-auto" aria-hidden="true">
+                            <circle cx="50" cy="50" r="45" fill="#fdf6e2" stroke="#000" strokeWidth="3" />
+                            <path d="M 28 75 L 42 55 L 48 59 L 34 79 Z" fill="#277a3d" stroke="#000" strokeWidth="2" />
+                            <line x1="42" y1="55" x2="68" y2="35" stroke="#e2a818" strokeWidth="3" strokeLinecap="round" />
+                            <circle cx="62" cy="40" r="14" fill="#1e60b3" fillOpacity="0.4" stroke="#1e60b3" strokeWidth="2.5" />
+                            <path d="M 58 35 A 8 8 0 0 1 66 35" stroke="#fff" strokeWidth="2" fill="none" opacity="0.8" />
+                        </svg>
+                    );
+                default:
+                    return null;
+            }
+        };
+
+        const MovementDoodle = ({ color }) => {
+            switch (color) {
+                case 'red':
+                    return (
+                        <svg viewBox="0 0 64 64" className="w-16 h-16 mx-auto stroke-current" fill="none" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <circle cx="32" cy="20" r="6" />
+                            <line x1="32" y1="26" x2="32" y2="44" />
+                            <path d="M 16 16 L 24 22 L 32 28 L 40 22 L 48 16" />
+                            <line x1="32" y1="44" x2="24" y2="58" />
+                            <line x1="32" y1="44" x2="40" y2="58" />
+                        </svg>
+                    );
+                case 'yellow':
+                    return (
+                        <svg viewBox="0 0 64 64" className="w-16 h-16 mx-auto stroke-current" fill="none" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <circle cx="32" cy="18" r="6" />
+                            <line x1="32" y1="24" x2="32" y2="40" />
+                            <path d="M 22 28 Q 32 30 42 24" />
+                            <path d="M 32 40 L 22 46 L 24 58" />
+                            <path d="M 32 40 L 40 45 L 36 58" />
+                            <path d="M 16 54 L 20 54" strokeWidth="2" />
+                            <path d="M 44 54 L 48 54" strokeWidth="2" />
+                        </svg>
+                    );
+                case 'blue':
+                    return (
+                        <svg viewBox="0 0 64 64" className="w-16 h-16 mx-auto stroke-current" fill="none" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <circle cx="32" cy="18" r="6" />
+                            <line x1="32" y1="24" x2="32" y2="44" />
+                            <path d="M 32 28 L 22 32 L 28 38 L 32 36" />
+                            <path d="M 32 28 L 42 32 L 36 38 L 32 36" />
+                            <line x1="32" y1="44" x2="25" y2="58" />
+                            <line x1="32" y1="44" x2="39" y2="58" />
+                        </svg>
+                    );
+                case 'green':
+                    return (
+                        <svg viewBox="0 0 64 64" className="w-16 h-16 mx-auto stroke-current" fill="none" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <circle cx="28" cy="18" r="5" />
+                            <path d="M 28 23 L 28 35 L 40 38 L 40 50" />
+                            <path d="M 18 35 L 28 35 L 35 28" />
+                            <path d="M 42 42 L 48 42 L 48 58" strokeWidth="2.5" opacity="0.6" />
+                            <path d="M 54 20 L 54 36 M 50 30 L 54 36 L 58 30" />
+                            <path d="M 54 48 L 54 32 M 50 38 L 54 32 L 58 38" />
+                        </svg>
+                    );
+                default:
+                    return null;
+            }
+        };
+
+        // ==========================================
+        // Main App Component
+        // ==========================================
+        function App() {
+            const [gameState, setGameState] = useState('welcome'); // welcome, playing, roundBreak, finalRankings
+            const [currentRound, setCurrentRound] = useState(1);
+            const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+            const [scores, setScores] = useState([0, 0, 0, 0, 0]);
+            const [teamNames, setTeamNames] = useState([
+                '第一小組', '第二小組', '第三小組', '第四小組', '第五小組'
+            ]);
+            const [editingTeamIndex, setEditingTeamIndex] = useState(null);
+            const [tempTeamName, setTempTeamName] = useState('');
+            const [defaultTimerDuration, setDefaultTimerDuration] = useState(15);
+            const [timeLeft, setTimeLeft] = useState(15);
+            const [isTimerRunning, setIsTimerRunning] = useState(false);
+            const [revealed, setRevealed] = useState(false);
+            const [selectedOptionFeedback, setSelectedOptionFeedback] = useState(null);
+            const [timeUpScreenDismissed, setTimeUpScreenDismissed] = useState(false);
+
+            // Practice states
+            const [practiceItemIdx, setPracticeItemIdx] = useState(0);
+            const [practiceActionRevealed, setPracticeActionRevealed] = useState(false);
+
+            const activeQuestionsOffset = currentRound === 1 ? 0 : 5;
+            const currentItem = RETRO_ITEMS[activeQuestionsOffset + currentQuestionIndex];
+            const timerRef = useRef(null);
+
+            const handleStartGame = () => {
+                sounds.playPop();
+                setGameState('playing');
+                resetQuestionState(0, 1);
+            };
+
+            const resetQuestionState = (questionIdx, roundNum) => {
+                setCurrentQuestionIndex(questionIdx);
+                setCurrentRound(roundNum);
+                setTimeLeft(defaultTimerDuration);
+                setRevealed(false);
+                setSelectedOptionFeedback(null);
+                setIsTimerRunning(true);
+                setTimeUpScreenDismissed(false);
+            };
+
+            useEffect(() => {
+                if (gameState === 'playing' && isTimerRunning && timeLeft > 0 && !revealed) {
+                    timerRef.current = setInterval(() => {
+                        setTimeLeft((prev) => {
+                            if (prev <= 1) {
+                                if (timerRef.current) clearInterval(timerRef.current);
+                                sounds.playIncorrect();
+                                setRevealed(true);
+                                setIsTimerRunning(false);
+                                return 0;
+                            }
+                            if (prev <= 6) {
+                                sounds.playTick();
+                            }
+                            return prev - 1;
+                        });
+                    }, 1000);
+                }
+                return () => {
+                    if (timerRef.current) clearInterval(timerRef.current);
+                };
+            }, [gameState, isTimerRunning, timeLeft, revealed]);
+
+            const handleScoreChange = (teamIndex, amount) => {
+                sounds.playPop();
+                setScores((prev) => {
+                    const copy = [...prev];
+                    copy[teamIndex] = Math.max(0, copy[teamIndex] + amount);
+                    return copy;
+                });
+            };
+
+            const handleOptionClick = (color) => {
+                if (revealed) return;
+                setSelectedOptionFeedback(color);
+                if (color === currentItem.correctColor) {
+                    sounds.playCorrect();
+                    setRevealed(true);
+                    setIsTimerRunning(false);
+                } else {
+                    sounds.playIncorrect();
+                }
+            };
+
+            const handleForceReveal = () => {
+                if (revealed) return;
+                sounds.playCorrect();
+                setRevealed(true);
+                setIsTimerRunning(false);
+                setSelectedOptionFeedback(currentItem.correctColor);
+            };
+
+            const handleNextQuestion = () => {
+                sounds.playPop();
+                if (currentQuestionIndex < 4) {
+                    resetQuestionState(currentQuestionIndex + 1, currentRound);
+                } else {
+                    setIsTimerRunning(false);
+                    if (currentRound === 1) {
+                        setGameState('roundBreak');
+                        sounds.playFanfare();
+                    } else {
+                        setGameState('finalRankings');
+                        sounds.playFanfare();
+                    }
+                }
+            };
+
+            const handleStartRoundTwo = () => {
+                sounds.playPop();
+                setGameState('playing');
+                resetQuestionState(0, 2);
+            };
+
+            const handleRestartFull = () => {
+                sounds.playPop();
+                setScores([0, 0, 0, 0, 0]);
+                setGameState('welcome');
+            };
+
+            const handleSaveTeamName = (idx) => {
+                if (tempTeamName.trim()) {
+                    setTeamNames((prev) => {
+                        const copy = [...prev];
+                        copy[idx] = tempTeamName.trim();
+                        return copy;
+                    });
+                }
+                setEditingTeamIndex(null);
+            };
+
+            const maxScore = Math.max(...scores);
+
+            return (
+                <div id="retro_game_root" class="min-h-screen w-full flex flex-col retro-brick-pattern relative text-[#faf6eb] font-sans pb-16 select-none">
+                    
+                    {/* Fixed Pinned Header Banner */}
+                    <header id="pinned_header_banner" class="bg-black text-white text-center py-2.5 font-bold tracking-widest text-[24px] uppercase border-b-4 border-[#8e2121] shadow-md z-30 sticky top-0 font-retro">
+                        數位教學專業設計
+                    </header>
+
+                    {/* Main Container */}
+                    <main id="main_game_frame" class="flex-1 max-w-7xl w-full mx-auto p-4 flex flex-col justify-center items-center">
+                        
+                        {/* Welcome Screen */}
+                        {gameState === 'welcome' && (
+                            <div id="welcome_screen" class="w-full max-w-4xl bg-[#fdf6e2] text-black border-8 border-[#8e2121] p-8 rounded-xl shadow-retro-lg flex flex-col items-center mt-6 relative">
+                                <div class="absolute -top-6 bg-[#8e2121] text-white px-8 py-2 border-4 border-black shadow-retro-sm text-2xl tracking-widest font-bold">
+                                    懷舊風情 🎴 柑仔店
+                                </div>
+
+                                <h1 class="text-4xl md:text-5xl font-black text-center text-[#8e2121] tracking-wide mt-6 mb-4 drop-shadow-sm">
+                                    體感互動健腦大賽
+                                </h1>
+                                <p class="text-2xl text-center text-gray-700 font-bold mb-8 max-w-xl">
+                                    喚醒熟齡黃金回憶，動手動腳防失智，累積屬於你們的「健康資產」！
+                                </p>
+
+                                {/* 經典懷舊物件對應正確顏色的說明 */}
+                                <div class="w-full bg-[#1e3f20] text-[#faf6eb] border-4 border-black p-6 rounded-lg shadow-retro-sm mb-8">
+                                    <h2 class="text-2xl font-bold font-retro mb-4 border-b border-[#e2a818] pb-2 text-[#e2a818] flex items-center gap-2">
+                                        🎨 經典懷舊物件對應顏色與動作說明
+                                    </h2>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        
+                                        {/* Red Card */}
+                                        <div class="bg-[#faf6eb] text-black border-4 border-black p-4 rounded-lg flex items-start gap-3 text-left">
+                                            <div class="w-12 h-12 rounded-lg bg-[#d9383a] text-white flex items-center justify-center text-xl font-bold shrink-0 border-2 border-black shadow-retro-sm">
+                                                紅
+                                            </div>
+                                            <div>
+                                                <h4 class="text-xl font-black text-[#d9383a] mb-1">紅色：雙手舉高 🖐️🖐️</h4>
+                                                <p class="text-sm font-bold text-gray-700">對應物件：大同玩偶、尪仔標、虎標萬金油</p>
+                                                <p class="text-xs text-gray-500 mt-1">動作說明：雙手過頭向上舉起，像舉起冠軍獎盃一樣！</p>
+                                            </div>
+                                        </div>
+
+                                        {/* Yellow Card */}
+                                        <div class="bg-[#faf6eb] text-black border-4 border-black p-4 rounded-lg flex items-start gap-3 text-left">
+                                            <div class="w-12 h-12 rounded-lg bg-[#e2a818] text-black flex items-center justify-center text-xl font-bold shrink-0 border-2 border-black shadow-retro-sm">
+                                                黃
+                                            </div>
+                                            <div>
+                                                <h4 class="text-xl font-black text-[#b3850f] mb-1">黃色：雙腳踏步 👣</h4>
+                                                <p class="text-sm font-bold text-gray-700">對應物件：彩色陀螺、森永牛奶糖</p>
+                                                <p class="text-xs text-gray-500 mt-1">動作說明：左右踏步，膝蓋盡量抬高，活絡下肢血循！</p>
+                                            </div>
+                                        </div>
+
+                                        {/* Blue Card */}
+                                        <div class="bg-[#faf6eb] text-black border-4 border-black p-4 rounded-lg flex items-start gap-3 text-left">
+                                            <div class="w-12 h-12 rounded-lg bg-[#1e60b3] text-white flex items-center justify-center text-xl font-bold shrink-0 border-2 border-black shadow-retro-sm">
+                                                藍
+                                            </div>
+                                            <div>
+                                                <h4 class="text-xl font-black text-[#1e60b3] mb-1">藍色：雙手叉腰 💁‍♂️</h4>
+                                                <p class="text-sm font-bold text-gray-700">對應物件：明星花露水、嗶嗶糖、太空氣球</p>
+                                                <p class="text-xs text-gray-500 mt-1">動作說明：雙手自然扶在腰際，挺胸抬頭，活動肩關節！</p>
+                                            </div>
+                                        </div>
+
+                                        {/* Green Card */}
+                                        <div class="bg-[#faf6eb] text-black border-4 border-black p-4 rounded-lg flex items-start gap-3 text-left">
+                                            <div class="w-12 h-12 rounded-lg bg-[#277a3d] text-white flex items-center justify-center text-xl font-bold shrink-0 border-2 border-black shadow-retro-sm">
+                                                綠
+                                            </div>
+                                            <div>
+                                                <h4 class="text-xl font-black text-[#277a3d] mb-1">綠色：起立坐下 🪑</h4>
+                                                <p class="text-sm font-bold text-gray-700">對應物件：黑松沙士、彈珠汽水</p>
+                                                <p class="text-xs text-gray-500 mt-1">動作說明：屁股稍微懸空起立，再穩穩坐下，鍛鍊大腿肌群！</p>
+                                            </div>
+                                        </div>
+
+                                    </div>
+                                </div>
+
+                                {/* 練習機制：課前暖身練習區 */}
+                                <div class="w-full bg-[#1e3f20] text-[#faf6eb] border-4 border-black p-6 rounded-lg shadow-retro-sm mb-8 text-left">
+                                    <div class="flex justify-between items-center border-b border-[#e2a818] pb-2 mb-4">
+                                        <h2 class="text-2xl font-bold text-[#e2a818] flex items-center gap-2">
+                                            🎓 課前體感動作暖身練習（講師手動切換）
+                                        </h2>
+                                        <div class="bg-[#8e2121] text-white px-3 py-1 border-2 border-black text-sm font-bold shadow-retro-sm rounded">
+                                            練習模式
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="bg-[#fdf6e2] text-black border-4 border-black p-4 rounded-lg flex flex-col md:flex-row gap-6 items-center">
+                                        {/* Practice Item Graphic Frame */}
+                                        <div class="flex flex-col items-center shrink-0">
+                                            <div class="bg-white border-4 border-black p-3 rounded-lg shadow-retro-sm w-36 h-36 flex items-center justify-center relative">
+                                                <ItemRetroGraphic itemId={RETRO_ITEMS[practiceItemIdx].id} />
+                                                <span class="absolute -bottom-2 bg-black text-white px-2 py-0.5 text-xs font-bold rounded">
+                                                    {RETRO_ITEMS[practiceItemIdx].category}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        {/* Practice Control and Action Display */}
+                                        <div class="flex-1 w-full space-y-3 text-left">
+                                            <div class="flex justify-between items-center flex-wrap gap-2">
+                                                <h3 class="text-3xl font-black text-[#8e2121]">
+                                                    {RETRO_ITEMS[practiceItemIdx].name}
+                                                </h3>
+                                                <div class="flex gap-1.5">
+                                                    <button
+                                                        onClick={() => {
+                                                            sounds.playPop();
+                                                            setPracticeItemIdx((prev) => (prev === 0 ? RETRO_ITEMS.length - 1 : prev - 1));
+                                                            setPracticeActionRevealed(false);
+                                                        }}
+                                                        class="bg-[#faf6eb] hover:bg-gray-200 border-2 border-black px-2.5 py-1.5 rounded text-sm font-bold shadow-retro-sm cursor-pointer"
+                                                        title="上一個懷舊物件"
+                                                    >
+                                                        ◀ 上一個
+                                                    </button>
+                                                    <button
+                                                        onClick={() => {
+                                                            sounds.playPop();
+                                                            setPracticeItemIdx((prev) => (prev === RETRO_ITEMS.length - 1 ? 0 : prev + 1));
+                                                            setPracticeActionRevealed(false);
+                                                        }}
+                                                        class="bg-[#faf6eb] hover:bg-gray-200 border-2 border-black px-2.5 py-1.5 rounded text-sm font-bold shadow-retro-sm cursor-pointer"
+                                                        title="下一個懷舊物件"
+                                                    >
+                                                        下一個 ▶
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            <p class="text-lg font-bold text-gray-700 bg-amber-50 p-2 border-2 border-dashed border-amber-300 rounded leading-relaxed">
+                                                💡 提示：{RETRO_ITEMS[practiceItemIdx].tip}
+                                            </p>
+
+                                            <div class="flex items-center gap-3 flex-wrap">
+                                                <button
+                                                    onClick={() => {
+                                                        sounds.playCorrect();
+                                                        setPracticeActionRevealed(!practiceActionRevealed);
+                                                    }}
+                                                    class="px-4 py-2 bg-[#e2a818] hover:bg-[#cfa115] text-black border-2 border-black font-bold rounded shadow-retro-sm text-sm active:translate-y-0.5 cursor-pointer"
+                                                >
+                                                    {practiceActionRevealed ? '👁️ 隱藏正確答案' : '💡 顯示正確對應動作與顏色'}
+                                                </button>
+
+                                                {practiceActionRevealed && (
+                                                    <div class={`flex items-center gap-3 px-4 py-1.5 border-2 border-black rounded shadow-retro-sm text-sm font-black ${ACTION_MAP[RETRO_ITEMS[practiceItemIdx].correctColor].colorClass} ${ACTION_MAP[RETRO_ITEMS[practiceItemIdx].correctColor].textClass}`}>
+                                                        <span class="text-base">
+                                                            正確顏色：{ACTION_MAP[RETRO_ITEMS[practiceItemIdx].correctColor].label}
+                                                        </span>
+                                                        <span class="border-l border-current h-4"></span>
+                                                        <span class="text-base flex items-center gap-1">
+                                                            正確動作：{RETRO_ITEMS[practiceItemIdx].correctAction}
+                                                        </span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Teams Editor */}
+                                <div class="w-full bg-white border-4 border-black p-6 rounded-lg shadow-retro-sm mb-8 text-left">
+                                    <h3 class="text-2xl font-black text-[#8e2121] mb-4 border-b-2 border-gray-100 pb-2">
+                                        🏆 參賽小組隊名自訂
+                                    </h3>
+                                    <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
+                                        {teamNames.map((name, idx) => (
+                                            <div key={idx} class="flex flex-col border-2 border-black p-2 rounded bg-[#faf6eb]">
+                                                <span class="text-xs font-bold text-gray-500 mb-1">小組 {idx + 1}</span>
+                                                {editingTeamIndex === idx ? (
+                                                    <div class="flex gap-1">
+                                                        <input
+                                                            type="text"
+                                                            value={tempTeamName}
+                                                            onChange={(e) => setTempTeamName(e.target.value.slice(0, 10))}
+                                                            class="w-full text-sm font-bold border border-gray-400 p-1 bg-white text-black"
+                                                            placeholder="隊名"
+                                                            autoFocus
+                                                        />
+                                                        <button
+                                                            onClick={() => handleSaveTeamName(idx)}
+                                                            class="bg-[#277a3d] text-white px-2 py-1 text-xs font-bold rounded"
+                                                        >
+                                                            存
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <div class="flex justify-between items-center">
+                                                        <span class="text-base font-bold text-black truncate">{name}</span>
+                                                        <button
+                                                            onClick={() => {
+                                                                setEditingTeamIndex(idx);
+                                                                setTempTeamName(name);
+                                                            }}
+                                                            class="text-gray-500 hover:text-black font-black"
+                                                            title="修改"
+                                                        >
+                                                            ✏️
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Quick manual soundcheck & Default Time Adjust Deck */}
+                                <div class="w-full bg-white border-4 border-black p-6 rounded-lg shadow-retro-sm mb-8 flex flex-col md:flex-row justify-between items-center gap-6">
+                                    
+                                    {/* Left Column: Sound Test */}
+                                    <div class="flex flex-col gap-2 items-start text-left">
+                                        <span class="text-sm font-black text-gray-500">🔊 音效廣播測試：</span>
+                                        <div class="flex gap-2">
+                                            <button 
+                                                onClick={() => sounds.playCorrect()} 
+                                                class="bg-[#faf6eb] hover:bg-gray-200 text-black border-2 border-black px-3 py-1.5 rounded-lg text-sm font-bold flex items-center gap-1.5 shadow-retro-sm cursor-pointer"
+                                            >
+                                                🔔 答對叮咚
+                                            </button>
+                                            <button 
+                                                onClick={() => sounds.playIncorrect()} 
+                                                class="bg-[#faf6eb] hover:bg-gray-200 text-black border-2 border-black px-3 py-1.5 rounded-lg text-sm font-bold flex items-center gap-1.5 shadow-retro-sm cursor-pointer"
+                                            >
+                                                📯 答錯喇叭
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Center/Right Column: Unified Time Setup & Start Button */}
+                                    <div class="flex flex-wrap items-center justify-end gap-4 w-full md:w-auto">
+                                        
+                                        {/* Timer Config */}
+                                        <div class="flex flex-col items-center md:items-end gap-1.5 bg-[#faf6eb] border-2 border-black p-3 rounded-lg shadow-retro-sm">
+                                            <span class="text-xs font-black text-gray-600">⏱️ 正式計時秒數設定：</span>
+                                            <div class="flex items-center gap-1.5">
+                                                <button
+                                                    onClick={() => { sounds.playPop(); setDefaultTimerDuration(prev => Math.max(5, prev - 5)); }}
+                                                    class="bg-red-700 hover:bg-red-800 text-white border-2 border-black px-2 py-1 rounded text-xs font-extrabold shadow-retro-sm cursor-pointer"
+                                                >
+                                                    -5秒
+                                                </button>
+                                                <button
+                                                    onClick={() => { sounds.playPop(); setDefaultTimerDuration(prev => Math.max(5, prev - 1)); }}
+                                                    class="bg-red-600 hover:bg-red-700 text-white border-2 border-black px-2 py-1 rounded text-xs font-extrabold shadow-retro-sm cursor-pointer"
+                                                >
+                                                    -1秒
+                                                </button>
+
+                                                <div class="flex items-center bg-black px-2 py-1 rounded border-2 border-black gap-1">
+                                                    <input
+                                                        type="number"
+                                                        min="5"
+                                                        max="120"
+                                                        value={defaultTimerDuration}
+                                                        onChange={(e) => {
+                                                            const val = parseInt(e.target.value, 10);
+                                                            setDefaultTimerDuration(isNaN(val) ? 15 : Math.max(5, Math.min(120, val)));
+                                                        }}
+                                                        class="w-12 text-center text-lg font-mono font-black bg-transparent text-[#e2a818] focus:outline-none"
+                                                    />
+                                                    <span class="text-xs text-gray-400 font-bold">秒</span>
+                                                </div>
+
+                                                <button
+                                                    onClick={() => { sounds.playPop(); setDefaultTimerDuration(prev => Math.min(120, prev + 1)); }}
+                                                    class="bg-[#277a3d] hover:bg-[#1f5f2e] text-white border-2 border-black px-2 py-1 rounded text-xs font-extrabold shadow-retro-sm cursor-pointer"
+                                                >
+                                                    +1秒
+                                                </button>
+                                                <button
+                                                    onClick={() => { sounds.playPop(); setDefaultTimerDuration(prev => Math.min(120, prev + 5)); }}
+                                                    class="bg-[#277a3d] hover:bg-[#1f5f2e] text-white border-2 border-black px-2 py-1 rounded text-xs font-extrabold shadow-retro-sm cursor-pointer"
+                                                    title="+5秒"
+                                                >
+                                                    +5秒
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {/* Big Start Button */}
+                                        <button
+                                            onClick={handleStartGame}
+                                            class="px-8 py-4 bg-[#d9383a] hover:bg-[#b02c2e] text-white border-4 border-black text-2xl font-black rounded-xl cursor-pointer shadow-retro-md transition-all active:translate-y-1 tracking-wider whitespace-nowrap"
+                                        >
+                                            開張營業！開始競賽 🚀
+                                        </button>
+
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+
+
+                    {/* Playing Screen */}
+                    {gameState === 'playing' && (
+                        <div class="w-full flex flex-col gap-4">
+                            
+                            <div class="w-full grid grid-cols-1 lg:grid-cols-12 gap-4">
+                                
+                                {/* Question Center */}
+                                <div class="lg:col-span-8 bg-[#fdf6e2] text-black border-8 border-[#8e2121] p-6 rounded-xl shadow-retro-md flex flex-col relative">
+                                    
+                                    <div class="flex justify-between items-center border-b-4 border-black pb-4 mb-4">
+                                        <div class="bg-[#8e2121] text-white px-4 py-1.5 border-2 border-black text-2xl font-bold shadow-retro-sm">
+                                            {currentRound === 1 ? '第一回合：歲月回味篇' : '第二回合：記憶增值篇'}
+                                        </div>
+                                        <div class="text-2xl font-black text-[#8e2121]">
+                                            第 {currentQuestionIndex + 1} / 5 題
+                                        </div>
+                                    </div>
+
+                                    <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center my-4">
+                                        <div class="md:col-span-5 flex flex-col items-center justify-center">
+                                            <div class="bg-white border-4 border-black p-4 rounded-xl shadow-retro-sm w-full max-w-[240px] aspect-square flex items-center justify-center relative">
+                                                <ItemRetroGraphic itemId={currentItem.id} />
+                                                <div class="absolute -bottom-3 bg-black text-white px-4 py-0.5 text-sm font-bold">
+                                                    {currentItem.category}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="md:col-span-7 space-y-4 text-left">
+                                            <h2 class="text-5xl md:text-6xl font-black text-[#8e2121]">
+                                                {currentItem.name}
+                                            </h2>
+                                            
+                                            <div class="bg-[#132c16] text-[#faf6eb] border-4 border-black p-4 rounded-xl relative shadow-retro-sm">
+                                                <div class="absolute top-2 left-3 text-xs text-[#e2a818] font-bold">
+                                                    阿公阿嬤回憶殺
+                                                </div>
+                                                <p class="text-2xl md:text-[28px] font-bold pt-4 leading-relaxed">
+                                                    {currentItem.tip}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {revealed ? (
+                                        <div class="bg-amber-100 border-4 border-black p-4 rounded-lg mt-4 shadow-retro-sm text-left">
+                                            <h4 class="text-xl font-extrabold text-[#8e2121] mb-1">
+                                                💡 柑仔店故事開講：
+                                            </h4>
+                                            <p class="text-lg md:text-xl font-bold text-gray-800 leading-relaxed">
+                                                {currentItem.trivia}
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <div class="h-16 flex items-center justify-center">
+                                            <span class="text-xl text-gray-500 font-bold tracking-widest animate-pulse">
+                                                🔊 各小組動作預備中... 準備做出正確動作！
+                                            </span>
+                                        </div>
+                                    )}
+
+                                    <div class="mt-auto pt-4 border-t-2 border-black flex justify-between items-center flex-wrap gap-4">
+                                        <div class="flex gap-2">
+                                            <button
+                                                onClick={handleForceReveal}
+                                                disabled={revealed}
+                                                class={`px-6 py-3 border-4 border-black text-xl font-black rounded-lg shadow-retro-sm cursor-pointer transition-all ${
+                                                    revealed 
+                                                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed shadow-none' 
+                                                    : 'bg-[#e2a818] hover:bg-[#cfa115] text-black active:translate-y-0.5'
+                                                }`}
+                                            >
+                                                💡 公佈標準答案動作
+                                            </button>
+                                            
+                                            {revealed && (
+                                                <div class="flex items-center gap-2 bg-[#277a3d] text-white border-2 border-black px-4 py-1.5 rounded-lg text-lg font-bold">
+                                                    <span>標準動作：{ACTION_MAP[currentItem.correctColor].action}</span>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <button
+                                            onClick={handleNextQuestion}
+                                            class="px-8 py-3 bg-[#d9383a] hover:bg-[#b02c2e] text-white border-4 border-black text-xl font-black rounded-lg shadow-retro-sm active:translate-y-0.5"
+                                        >
+                                            <span>{currentQuestionIndex === 4 ? '結算此回合 🚩' : '下一題接招 ➡️'}</span>
+                                        </button>
+                                    </div>
+
+                                </div>
+
+                                {/* Right Panel: Configurable Timer & Scoreboard */}
+                                <div class="lg:col-span-4 flex flex-col gap-4">
+                                    
+                                    {/* ADJUSTABLE TIMER CARD */}
+                                    <div class="bg-[#132c16] border-8 border-[#8e2121] p-4 rounded-xl shadow-retro-md flex flex-col items-center justify-center relative">
+                                        <div class="text-xs text-[#e2a818] font-bold tracking-widest mb-1">
+                                            倒數計時器
+                                        </div>
+                                        
+                                        <div class="flex flex-col items-center gap-3 w-full">
+                                            
+                                            {/* Seconds adjustments */}
+                                            <div class="flex items-center gap-1 w-full justify-center">
+                                                <button
+                                                    onClick={() => { sounds.playPop(); setTimeLeft(prev => Math.max(0, prev - 5)); }}
+                                                    class="bg-red-700 hover:bg-red-800 text-white border-2 border-black px-2 py-1 rounded text-xs font-bold"
+                                                >
+                                                    -5秒
+                                                </button>
+                                                <button
+                                                    onClick={() => { sounds.playPop(); setTimeLeft(prev => Math.max(0, prev - 1)); }}
+                                                    class="bg-red-600 hover:bg-red-700 text-white border-2 border-black px-2 py-1 rounded text-xs font-bold"
+                                                >
+                                                    -1秒
+                                                </button>
+                                                <button
+                                                    onClick={() => { sounds.playPop(); setTimeLeft(prev => prev + 1); }}
+                                                    class="bg-[#277a3d] hover:bg-[#1f5f2e] text-white border-2 border-black px-2 py-1 rounded text-xs font-bold"
+                                                >
+                                                    +1秒
+                                                </button>
+                                                <button
+                                                    onClick={() => { sounds.playPop(); setTimeLeft(prev => prev + 5); }}
+                                                    class="bg-[#277a3d] hover:bg-[#1f5f2e] text-white border-2 border-black px-2 py-1 rounded text-xs font-bold"
+                                                >
+                                                    +5秒
+                                                </button>
+                                            </div>
+
+                                            {/* Clock Display */}
+                                            <div class="flex items-center gap-3 justify-center w-full bg-black border-4 border-black rounded-lg p-2.5">
+                                                <div class="flex flex-col items-center">
+                                                    <span class="text-[10px] text-gray-500 font-bold">點擊數字可直接輸入修改</span>
+                                                    <div class="flex items-center">
+                                                        <input
+                                                            type="number"
+                                                            min="0"
+                                                            max="999"
+                                                            value={timeLeft}
+                                                            onChange={(e) => {
+                                                                const val = parseInt(e.target.value, 10);
+                                                                const target = isNaN(val) ? 0 : Math.max(0, val);
+                                                                setTimeLeft(target);
+                                                                if (target > 0) setTimeUpScreenDismissed(false);
+                                                            }}
+                                                            class={`w-28 text-5xl font-black font-mono text-center bg-transparent focus:outline-none focus:text-yellow-300 ${
+                                                                timeLeft <= 5 ? 'text-[#d9383a] animate-pulse' : 'text-[#e2a818]'
+                                                            }`}
+                                                        />
+                                                        <span class="text-xl font-bold text-gray-400">秒</span>
+                                                    </div>
+                                                </div>
+
+                                                <div class="flex flex-col gap-1">
+                                                    <button
+                                                        onClick={() => { sounds.playPop(); setIsTimerRunning(!isTimerRunning); }}
+                                                        class="bg-white hover:bg-gray-200 text-black border-2 border-black p-1 rounded-md text-xs font-bold"
+                                                    >
+                                                        {isTimerRunning ? '⏸️' : '▶️'}
+                                                    </button>
+                                                    <button
+                                                        onClick={() => { sounds.playPop(); setTimeLeft(defaultTimerDuration); setTimeUpScreenDismissed(false); }}
+                                                        class="bg-white hover:bg-gray-200 text-black border-2 border-black p-1 rounded-md text-xs font-bold"
+                                                    >
+                                                        🔄
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                        </div>
+
+                                        {timeLeft === 0 && (
+                                            <span class="text-red-500 font-black text-lg mt-2 retro-blink">
+                                                ⚠️ 時間到！請講師解答
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    {/* Score panel */}
+                                    <div class="bg-[#fdf6e2] text-black border-8 border-black p-4 rounded-xl shadow-retro-md flex flex-col flex-1 text-left">
+                                        <h3 class="text-2xl font-black text-center text-[#8e2121] border-b-4 border-black pb-2 mb-3">
+                                            👥 小組即時加分榜
+                                        </h3>
+
+                                        <div class="space-y-3 flex-1 flex flex-col justify-between">
+                                            {teamNames.map((name, idx) => {
+                                                const isLeader = scores[idx] === maxScore && maxScore > 0;
+                                                return (
+                                                    <div 
+                                                        key={idx} 
+                                                        class={`flex items-center justify-between border-2 p-2 rounded-lg ${
+                                                            isLeader ? 'border-[#e2a818] bg-yellow-50 shadow-retro-sm' : 'border-black bg-white'
+                                                        }`}
+                                                    >
+                                                        <div class="flex items-center gap-2 truncate">
+                                                            <span class="w-6 h-6 rounded-full bg-[#132c16] text-white text-xs font-extrabold flex items-center justify-center">
+                                                                {idx + 1}
+                                                            </span>
+                                                            <span class="text-lg font-bold truncate text-gray-900" title={name}>
+                                                                {name}
+                                                            </span>
+                                                            {isLeader && (
+                                                                <span class="bg-[#e2a818] text-[#1c1401] text-xs font-black px-1.5 py-0.5 rounded border border-black">
+                                                                    👑
+                                                                </span>
+                                                            )}
+                                                        </div>
+
+                                                        <div class="flex items-center gap-2">
+                                                            <div class="text-2xl font-black font-mono text-[#d9383a] bg-black text-center px-2.5 py-0.5 rounded border border-black min-w-[60px]">
+                                                                {scores[idx]}
+                                                            </div>
+
+                                                            <div class="flex gap-0.5">
+                                                                <button
+                                                                    onClick={() => handleScoreChange(idx, 10)}
+                                                                    class="bg-[#277a3d] text-white border-2 border-black p-1 rounded hover:bg-[#1f5f2e]"
+                                                                >
+                                                                    ➕
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleScoreChange(idx, -10)}
+                                                                    class="bg-[#d9383a] text-white border-2 border-black p-1 rounded hover:bg-[#b02c2e]"
+                                                                >
+                                                                    ➖
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                            {/* Color/Action Buttons Grid */}
+                            <div class="w-full bg-black border-4 border-black p-4 rounded-xl shadow-retro-md grid grid-cols-1 md:grid-cols-4 gap-4 mt-2">
+                                {Object.keys(ACTION_MAP).map((colorKey) => {
+                                    const config = ACTION_MAP[colorKey];
+                                    const isThisCorrect = currentItem.correctColor === colorKey;
+                                    const isSelected = selectedOptionFeedback === colorKey;
+                                    
+                                    let ringClass = 'border-white';
+                                    if (revealed) {
+                                        ringClass = isThisCorrect ? 'border-yellow-400 ring-8 ring-yellow-400' : 'opacity-40 border-transparent';
+                                    }
+
+                                    return (
+                                        <button
+                                            key={colorKey}
+                                            onClick={() => handleOptionClick(colorKey)}
+                                            class={`${config.colorClass} ${config.textClass} border-4 ${ringClass} p-4 rounded-xl flex flex-col justify-between items-center text-center cursor-pointer shadow-retro-md transition-all active:translate-y-1 relative`}
+                                            style={{ minHeight: '160px' }}
+                                        >
+                                            {revealed && isThisCorrect && (
+                                                <div class="absolute top-2 right-2 bg-yellow-400 text-black rounded-full p-1 border border-black text-xs font-bold">
+                                                    ✓ 正確
+                                                </div>
+                                            )}
+                                            
+                                            <div class="text-xl font-black">
+                                                {config.label}按鈕
+                                            </div>
+                                            
+                                            <div class="my-2">
+                                                <MovementDoodle color={colorKey} />
+                                            </div>
+
+                                            <div class="text-2xl font-black">
+                                                {config.action}
+                                            </div>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                        </div>
+                    )}
+
+                    {/* Round Break Screen */}
+                    {gameState === 'roundBreak' && (
+                        <div class="w-full max-w-4xl bg-[#fdf6e2] text-black border-8 border-[#8e2121] p-8 rounded-xl shadow-retro-lg flex flex-col items-center">
+                            <h2 class="text-4xl font-black text-[#8e2121] mb-6">
+                                ☕ 中場休息，資產盤點
+                            </h2>
+                            <p class="text-2xl text-center text-gray-700 font-bold mb-8">
+                                第一回合順利結束！各位哥哥姊姊太棒了，先喝口水，動動手。
+                            </p>
+
+                            {/* Current Standings */}
+                            <div class="w-full bg-white border-4 border-black p-6 rounded-lg shadow-retro-md mb-8">
+                                <h3 class="text-2xl font-black text-[#8e2121] mb-4 text-center border-b-2 border-gray-100 pb-2">
+                                    📊 第一回合健康資產結算
+                                </h3>
+                                <div class="space-y-4">
+                                    {teamNames.map((name, idx) => (
+                                        <div key={idx} class="flex justify-between items-center border-b-2 border-gray-100 pb-2">
+                                            <span class="text-xl font-bold text-gray-800">{idx+1}. {name}</span>
+                                            <span class="text-3xl font-black text-[#d9383a]">{scores[idx]} 分</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={handleStartRoundTwo}
+                                class="px-12 py-5 bg-[#277a3d] hover:bg-[#1f5f2e] text-white border-4 border-black text-3xl font-black rounded-xl cursor-pointer shadow-retro-md"
+                            >
+                                進入第二回合 🚀
+                            </button>
+                        </div>
+                    )}
+
+                    {/* Final Rankings */}
+                    {gameState === 'finalRankings' && (
+                        <div class="w-full max-w-4xl bg-[#fdf6e2] text-black border-8 border-[#8e2121] p-8 rounded-xl shadow-retro-lg flex flex-col items-center">
+                            <h2 class="text-4xl font-black text-[#8e2121] mb-6">
+                                🏆 最終健康資產排行榜
+                            </h2>
+                            
+                            <div class="w-full bg-white border-4 border-black p-6 rounded-lg shadow-retro-md mb-8">
+                                <div class="space-y-4">
+                                    {teamNames
+                                        .map((name, idx) => ({ name, score: scores[idx] }))
+                                        .sort((a, b) => b.score - a.score)
+                                        .map((team, rank) => (
+                                            <div 
+                                                key={rank} 
+                                                class={`flex justify-between items-center p-3 rounded-lg border-2 border-black ${
+                                                    rank === 0 ? 'bg-yellow-100' : 'bg-[#faf6eb]'
+                                                }`}
+                                            >
+                                                <span class="text-2xl font-black text-gray-800">
+                                                    {rank === 0 ? '👑 第 1 名' : `第 ${rank + 1} 名`} : {team.name}
+                                                </span>
+                                                <span class="text-4xl font-black text-[#d9383a]">{team.score} 分</span>
+                                            </div>
+                                        ))
+                                    }
+                                </div>
+                            </div>
+
+                            <div class="bg-[#132c16] text-[#faf6eb] border-4 border-black p-6 rounded-lg shadow-retro-sm mb-8 text-center max-w-xl">
+                                <h3 class="text-2xl font-black text-[#e2a818] mb-2">🎉 恭喜所有參賽的大寶貝！</h3>
+                                <p class="text-lg leading-relaxed">
+                                    今天大家動手動腳，活化大腦細胞！賺到了最珍貴的「健康資產」，人人都拿冠軍，健康滿分、活力滿分！
+                                </p>
+                            </div>
+
+                            <button
+                                onClick={handleRestartFull}
+                                class="px-10 py-4 bg-[#d9383a] hover:bg-[#b02c2e] text-white border-4 border-black text-2xl font-black rounded-xl cursor-pointer shadow-retro-md"
+                            >
+                                🎴 重啟大賽
+                            </button>
+                        </div>
+                    )}
+
+                    {/* Full Screen Timeout Overlay */}
+                    {gameState === 'playing' && timeLeft === 0 && !timeUpScreenDismissed && (
+                        <div class="fixed inset-0 bg-black z-50 flex flex-col justify-center items-center p-6 text-center">
+                            <div class="space-y-6">
+                                <h1 
+                                    class="text-7xl md:text-[140px] font-black tracking-widest text-[#dbff00] animate-pulse"
+                                    style={{
+                                        textShadow: '0 0 20px #dbff00, 0 0 50px #dbff00, 0 0 100px #dbff00',
+                                        lineHeight: 1.2
+                                    }}
+                                >
+                                    時間到！
+                                </h1>
+                                
+                                <p class="text-2xl md:text-3xl font-bold text-gray-300 tracking-wide mt-4">
+                                    最快完成動作的小組，組長請高高舉手！🙋‍♂️🙋‍♀️
+                                </p>
+
+                                <div class="bg-[#132c16] border-2 border-[#277a3d] rounded-xl p-4 max-w-lg mx-auto text-[#faf6eb] text-xl font-bold mt-2">
+                                    💡 講師提醒：請檢視學員的動作是否正確，<br />
+                                    並在右側即時加分榜為領先小組加分！
+                                </div>
+                                
+                                <div class="flex flex-wrap gap-4 justify-center pt-8">
+                                    <button
+                                        onClick={() => {
+                                            sounds.playPop();
+                                            setTimeLeft(10);
+                                            setIsTimerRunning(true);
+                                            setTimeUpScreenDismissed(false);
+                                        }}
+                                        class="px-6 py-3 bg-[#277a3d] hover:bg-[#1f5f2e] text-white border-2 border-white rounded-lg text-lg font-bold cursor-pointer"
+                                    >
+                                        ➕ 再給 10 秒挑戰
+                                    </button>
+                                    
+                                    <button
+                                        onClick={() => {
+                                            sounds.playPop();
+                                            setTimeLeft(defaultTimerDuration);
+                                            setIsTimerRunning(true);
+                                            setTimeUpScreenDismissed(false);
+                                        }}
+                                        class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white border-2 border-white rounded-lg text-lg font-bold cursor-pointer"
+                                    >
+                                        🔄 重新計時 ({defaultTimerDuration}秒)
+                                    </button>
+
+                                    <button
+                                        onClick={() => {
+                                            sounds.playPop();
+                                            setTimeUpScreenDismissed(true);
+                                        }}
+                                        class="px-6 py-3 bg-[#d9383a] hover:bg-[#b02c2e] text-white border-2 border-white rounded-lg text-lg font-bold cursor-pointer"
+                                    >
+                                        ❌ 關閉此畫面 / 看答案
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    </main>
+                </div>
+            );
+        }
+
+        // Render the app
+        const rootElement = document.getElementById('root');
+        const root = ReactDOM.createRoot(rootElement);
+        root.render(<App />);
+    </script>
+</body>
+</html>
